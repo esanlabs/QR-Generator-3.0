@@ -232,6 +232,13 @@
     function generarQR() {
         const url = document.getElementById('urlInput').value;
         if (!url) return alert("Por favor ingresa una URL");
+    
+        // --- VALIDACIÓN DE URL OBLIGATORIA ---
+        if (url === "") {
+            alert("Por favor, ingresa una URL. El campo no puede estar vacío.");
+            urlInput.focus(); // Coloca el cursor en el campo para ayudar al usuario
+            return; // Detiene la ejecución: no genera el QR y no registra en el Excel
+        }
 
         // 1. Limpiar QR anterior
         document.getElementById('qrcode').innerHTML = "";
@@ -313,4 +320,5 @@
 </body>
 
 </html>
+
 
