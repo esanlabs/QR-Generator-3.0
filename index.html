@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador QR | ESAN Labs</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        /* --- ESTILOS VISUALES (Diseño ESAN Labs) --- */
+        :root {
+            --esan-red: #e30613;
+            --esan-blue: #003a70;
+            --success-green: #059669;
+            --text-main: #1f2937;
+            --text-light: #6b7280;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background-color: var(--esan-blue);
+            background-image: url('fondo.jpg'); /* Fondo opcional */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .main-card {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            width: 100%;
+            max-width: 420px;
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Logo Header */
+        .logo-header {
+            background: var(--esan-blue);
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            align-self: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .logo-header img { max-width: 150px; height: auto; display: block; }
+        
+        /* Panel de Control */
+        .control-panel {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .switch-container { display: flex; justify-content: space-between; align-items: center; }
+        .switch-label { font-size: 0.9rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+
+        /* Switch Toggle */
+        .switch { position: relative; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background-color: #cbd5e0; border-radius: 34px; transition: .3s; }
+        .slider:before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: .3s; }
+        input:checked + .slider { background-color: var(--esan-red); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        #uploadContainer { display: none; margin-top: 10px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .upload-btn-fake {
+            display: block; padding: 10px; border: 2px dashed #cbd5e0;
+            border-radius: 8px; font-size: 0.8rem; cursor: pointer; background: white; transition: 0.2s;
+        }
+        .upload-btn-fake:hover { border-color: var(--esan-blue); color: var(--esan-blue); }
+        #imageInput { display: none; } /* Input real oculto */
+
+        /* Input URL */
+        .url-input-wrapper { position: relative; margin-bottom: 1rem; }
+        #urlInput {
+            width: 100%; padding: 14px 14px 14px 45px;
+            border: 2px solid #e2e8f0; border-radius: 12px; outline: none; transition: 0.3s;
+        }
+        #urlInput:focus { border-color: var(--esan-blue); }
+        .input-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+
+        /* Botones */
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 12px;
+            font-weight: 700; cursor: pointer; margin-top: 10px;
+            display: flex; justify-content: center; align-items: center; gap: 8px; transition: transform 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-primary { background: var(--esan-red); color: white; box-shadow: 0 4px 12px rgba(227, 6, 19, 0.2); }
+        .btn-success { background: var(--success-green); color: white; display: none; }
+        .btn-outline { background: white; border: 2px solid #e2e8f0; color: var(--text-light); margin-top: 15px; }
+        .btn-outline:hover { border-color: var(--esan-red); color: var(--esan-red); }
+
+        /* QR Frame */
+        #qrContainer { margin-top: 20px; display: none; justify-content: center; }
+        .qr-frame {
+            background: white; padding: 15px; border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative;
+            display: inline-block; aspect-ratio: 1 / 1; /* Cuadrado perfecto */
+        }
+
+        #picCenter {
+            position: absolute; width: 55px; height: 55px;
+            background: white; padding: 4px; border-radius: 8px;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; object-fit: contain; z-index: 10;
+        }
+
+        .footer-brand { margin-top: 2rem; font-size: 0.8rem; color: var(--text-light); }
+        .version { position: fixed; bottom: 10px; right: 15px; font-size: 0.7rem; color: rgba(255,255,255,0.5); }
+    </style>
+</head>
+<body>
+
+<div class="main-card">
+    <div class="logo-header">
+        <img src="LOGOTIPO.png" alt="ESAN Labs" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <strong style="display: none;">ESAN Labs</strong>
+    </div>
+
+    <div class="control-panel">
+        <div class="switch-container">
+            <span class="switch-label"><i class="fas fa-wand-magic-sparkles"></i> Personalizar Logo</span>
+            <label class="switch">
+                <input type="checkbox" id="switcher">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div id="uploadContainer">
+            <label for="imageInput" class="upload-btn-fake"><i class="fas fa-cloud-arrow-up"></i> Seleccionar logo central</label>
+            <input type="file" id="imageInput" accept="image/*">
+        </div>
+    </div>
+
+    <div class="url-input-wrapper">
+        <input type="text" id="urlInput" placeholder="Pega tu URL aquí..." autocomplete="off">
+        <i class="fas fa-link input-icon"></i>
+    </div>
+    
+    <button class="btn btn-primary" id="btnGenerar" onclick="generarQR()">
+        <i class="fas fa-qrcode"></i> Generar QR
+    </button>
+
+    <div id="qrContainer">
+        <div class="qr-frame" id="captureArea">
+            <div id="qrcode"></div>
+            <img id="picCenter" src="arbol.png" onerror="this.style.display='none'">
+        </div>
+    </div>
+    
+    <button class="btn btn-success" id="btnDescargar" onclick="descargar()">
+        <i class="fas fa-download"></i> Descargar PNG
+    </button>
+
+    <button id="btnReiniciar" class="btn btn-outline" onclick="reiniciar()" style="display:none;">
+        <i class="fas fa-rotate-right"></i> Limpiar todo
+    </button>
+
+    <div class="footer-brand">Aplicativo oficial de <strong>ESAN Labs</strong></div>
+</div>
+
+<div class="version">v.3.2 Analytics & ID Ready</div>
+
+<script>
+    // ==========================================
+    // 🔴 IMPORTANTE: PEGA TU URL DE APPS SCRIPT AQUÍ ABAJO ENTRE LAS COMILLAS
+    // ==========================================
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtBJE9wFI3Y8hjy2w3_C6udH1NiNVZpNRhNsqw4uUJ5qyu7IlMe9yj4mN9QIqCsaQX/exec"; 
+    // ==========================================
+
+    const switcher = document.getElementById('switcher');
+    const uploadBox = document.getElementById('uploadContainer');
+    const picCenter = document.getElementById('picCenter');
+    const imageInput = document.getElementById('imageInput');
+    const qrContainer = document.getElementById('qrContainer');
+    const btnGenerar = document.getElementById('btnGenerar');
+    const btnDescargar = document.getElementById('btnDescargar');
+    const btnReiniciar = document.getElementById('btnReiniciar');
+    let qrcodeInstance = null;
+
+    // Lógica del Switch (Mostrar/Ocultar opciones de logo)
+    switcher.addEventListener('change', function() {
+        uploadBox.style.display = this.checked ? 'block' : 'none';
+        if (this.checked) {
+             // Solo mostramos si hay una imagen válida cargada
+             if (picCenter.src && picCenter.src !== "") {
+                 picCenter.style.display = 'block';
+             }
+        } else {
+             picCenter.style.display = 'none';
+        }
+    });
+
+    // Lógica de Subida de Archivo
+    imageInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                picCenter.src = e.target.result;
+                if (switcher.checked) picCenter.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // FUNCIÓN PRINCIPAL: Generar QR + Registrar en Excel
+    function generarQR() {
+        const url = document.getElementById('urlInput').value;
+        if (!url) return alert("Por favor ingresa una URL");
+
+        // 1. Limpiar QR anterior
+        document.getElementById('qrcode').innerHTML = "";
+        
+        // 2. Crear QR Nuevo
+        qrcodeInstance = new QRCode(document.getElementById("qrcode"), {
+            text: url,
+            width: 256,
+            height: 256,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H 
+        });
+
+        // 3. Cambiar Botones (Ocultar Generar -> Mostrar Descargar/Limpiar)
+        btnGenerar.style.display = 'none';
+        qrContainer.style.display = 'flex';
+        btnDescargar.style.display = 'flex';
+        btnReiniciar.style.display = 'flex';
+        
+        // 4. Mostrar logo central si el switch estaba activo
+        if(switcher.checked) {
+            picCenter.style.display = 'block';
+        }
+
+        // 5. REGISTRAR USO EN GOOGLE SHEETS (Conteo + ID)
+        registrarUso(url);
+    }
+
+    // Función para enviar datos a Google Sheets
+    function registrarUso(urlConvertida) {
+        if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("AQUI_PEGA")) {
+            console.log("Falta configurar la URL del Script para el conteo.");
+            return; 
+        }
+
+        // Envía: URL y Tipo de Dispositivo (User Agent)
+        fetch(APPS_SCRIPT_URL + "?url=" + encodeURIComponent(urlConvertida) + "&dispositivo=" + navigator.userAgent, {
+            method: "GET",
+            mode: "no-cors" // Permite enviar datos sin esperar respuesta (más rápido)
+        }).then(() => {
+            console.log("Uso registrado correctamente en el Excel.");
+        }).catch(err => console.error("Error registrando uso", err));
+    }
+
+    // Función de Descarga
+    function descargar() {
+        const area = document.getElementById('captureArea');
+        html2canvas(area, {
+            backgroundColor: null,
+            scale: 3
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'QR_ESAN_LABS_' + Date.now() + '.png';
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        });
+    }
+
+    // Función de Reinicio (Limpiar todo)
+    function reiniciar() {
+        document.getElementById('urlInput').value = "";
+        imageInput.value = ""; 
+        
+        // Restaurar estado inicial
+        btnGenerar.style.display = 'flex';
+        qrContainer.style.display = 'none';
+        btnDescargar.style.display = 'none';
+        btnReiniciar.style.display = 'none';
+        document.getElementById('qrcode').innerHTML = "";
+        
+        // Resetear imagen a default (arbol) pero oculta
+        if(picCenter.src.indexOf('base64') !== -1) {
+            picCenter.src = "arbol.png";
+        }
+    }
+</script>
+
+</body>
+</html>
