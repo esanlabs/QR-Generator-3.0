@@ -157,7 +157,7 @@
     </div>
 
     <div class="url-input-wrapper">
-        <input type="text" id="urlInput" placeholder="Pega tu URL aquí..." autocomplete="off" required>
+        <input type="text" id="urlInput" placeholder="Pega tu URL aquí..." autocomplete="off">
         <i class="fas fa-link input-icon"></i>
     </div>
     
@@ -183,13 +183,13 @@
     <div class="footer-brand">Aplicativo oficial de <strong>ESAN Labs</strong></div>
 </div>
 
-<div class="version">v.3.0</div>
+<div class="version">v.3.2 Analytics & ID Ready</div>
 
 <script>
     // ==========================================
     // 🔴 IMPORTANTE: PEGA TU URL DE APPS SCRIPT AQUÍ ABAJO ENTRE LAS COMILLAS
     // ==========================================
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyK-V7wG8HJt-Pl4iOOTNOdIwE39rmwJIcBMIMtnDvNg73_24JF0uT1bMgyWM2QGNFE/exec"; 
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxV3copoDqW9U2yT9QvMOsgqNDjUKyQQuHNlMyxr-IZ88uspKAunEXv-grE1BHAIO_j/exec"; 
     // ==========================================
 
     const switcher = document.getElementById('switcher');
@@ -228,22 +228,32 @@
         }
     });
 
-    // FUNCIÓN PRINCIPAL: Generar QR + Registrar en Excel
+    // FUNCIÓN PRINCIPAL: Generar QR + Registrar en Excel (Con validación de URL)
     function generarQR() {
-        const url = document.getElementById('urlInput').value;
-        if (!url) return alert("Por favor ingresa una URL");
-    
-        // --- VALIDACIÓN DE URL OBLIGATORIA ---
+        const urlInput = document.getElementById('urlInput');
+        const url = urlInput.value.trim(); // .trim() elimina espacios vacíos accidentales
+
+        // EXPRESIÓN REGULAR: Obliga a que empiece con http://, https:// o www.
+        const urlPattern = /^(https?:\/\/|www\.)[^\s/$.?#].[^\s]*$/i;
+
+        // 1. Validar que no esté vacío
         if (url === "") {
-            alert("Por favor, ingresa una URL. El campo no puede estar vacío.");
-            urlInput.focus(); // Coloca el cursor en el campo para ayudar al usuario
-            return; // Detiene la ejecución: no genera el QR y no registra en el Excel
+            alert("Por favor, ingresa una URL.");
+            urlInput.focus();
+            return; // Detiene la ejecución
         }
 
-        // 1. Limpiar QR anterior
+        // 2. Validar que tenga formato de URL (evita letras sueltas como "a" o "b")
+        if (!urlPattern.test(url)) {
+            alert("¡Error! Por favor ingresa un formato de URL válido.");
+            urlInput.focus();
+            return; // Detiene la ejecución si no es una URL válida
+        }
+
+        // 3. Limpiar QR anterior
         document.getElementById('qrcode').innerHTML = "";
         
-        // 2. Crear QR Nuevo
+        // 4. Crear QR Nuevo
         qrcodeInstance = new QRCode(document.getElementById("qrcode"), {
             text: url,
             width: 256,
@@ -253,18 +263,18 @@
             correctLevel : QRCode.CorrectLevel.H 
         });
 
-        // 3. Cambiar Botones (Ocultar Generar -> Mostrar Descargar/Limpiar)
+        // 5. Cambiar Botones (Ocultar Generar -> Mostrar Descargar/Limpiar)
         btnGenerar.style.display = 'none';
         qrContainer.style.display = 'flex';
         btnDescargar.style.display = 'flex';
         btnReiniciar.style.display = 'flex';
         
-        // 4. Mostrar logo central si el switch estaba activo
+        // 6. Mostrar logo central si el switch estaba activo
         if(switcher.checked) {
             picCenter.style.display = 'block';
         }
 
-        // 5. REGISTRAR USO EN GOOGLE SHEETS (Conteo + ID)
+        // 7. REGISTRAR USO EN GOOGLE SHEETS (Solo llega aquí si la URL es válida)
         registrarUso(url);
     }
 
@@ -318,7 +328,4 @@
 </script>
 
 </body>
-
 </html>
-
-
